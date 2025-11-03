@@ -9,18 +9,26 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/static/$1"
+      "dest": "/public/static/$1"  ← 수정!
     },
     {
-      "src": "/(manifest.json|sw.js|favicon.*)",
-      "dest": "/public/$1"
+      "src": "/favicon.ico",
+      "dest": "/public/favicon.ico"  ← 수정!
     },
     {
-      "src": "/",
-      "dest": "/app.py"
+      "src": "/manifest.json",
+      "dest": "/public/manifest.json"  ← 수정!
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/public/sw.js"  ← 수정!
     },
     {
       "src": "/api/(.*)",
+      "dest": "/app.py"
+    },
+    {
+      "src": "/(.*)",
       "dest": "/app.py"
     }
   ]

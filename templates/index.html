@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국투자증권 AI 음성챗봇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .header {
+            background: white;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+            padding-bottom: 280px;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        .message {
+            margin: 16px 0;
+            display: flex;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .bot-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .bot-icon img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .message.user .message-content {
+            background: #555;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .confirm-buttons {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .confirm-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn.yes {
+            background: #555;
+            color: white;
+        }
+
+        .confirm-btn.yes:hover {
+            background: #333;
+        }
+
+        .confirm-btn.no {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .confirm-btn.no:hover {
+            background: #e0e0e0;
+        }
+
+        .input-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: white;
+        }
+
+        .input-container {
+            position: relative;
+            background: #f5f5f5;
+            border-radius: 40px;
+            padding: 60px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .keyboard-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 24px;
+        }
+
+        .keyboard-icon:hover {
+            background: #f0f0f0;
+        }
+
+        .big-bot-icon {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .big-bot-icon:hover {
+            transform: scale(1.05);
+        }
+
+        .big-bot-icon.recording {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .placeholder-text {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 18px;
+            width: fit-content;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.6;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .text-input-mode {
+            display: none;
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 30px;
+            font-size: 15px;
+            outline: none;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .text-input-mode.active {
+            display: block;
+        }
+
+        .send-btn {
+            display: none;
+            position: absolute;
+            right: 25px;
+            bottom: 70px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #555;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .send-btn.active {
+            display: flex;
+        }
+
+        .send-btn:hover {
+            background: #333;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">한국투자증권 AI 음성챗봇</div>
+            <div class="header-subtitle">● 봇과 대화 중</div>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="message bot">
+                <div class="bot-icon">
+                    <img src="/static/chatbot.png" alt="bot">
+                </div>
+                <div class="message-content">주식 매수/매도를 음성으로 할 수 있어요. "네이버 5주 매수"라고 말해보세요.</div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <div class="keyboard-icon" id="mode-icon" onclick="toggleInputMode()">
+                    ⌨️
+                </div>
+                
+                <img src="/static/chatbot.png" alt="bot" class="big-bot-icon" id="voice-icon" onclick="toggleRecording()">
+                
+                <div class="placeholder-text" id="placeholder-text">
+                    아이콘을 클릭하여 음성채팅을 시작하세요
+                </div>
+
+                <input type="text" 
+                       class="text-input-mode" 
+                       id="text-input" 
+                       placeholder="메시지를 입력하세요..."
+                       onkeypress="handleKeyPress(event)">
+                
+                <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                    →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let currentConfirmData = null;
+        let isTextMode = false;
+
+        function toggleInputMode() {
+            isTextMode = !isTextMode;
+            const voiceIcon = document.getElementById('voice-icon');
+            const placeholder = document.getElementById('placeholder-text');
+            const textInput = document.getElementById('text-input');
+            const sendBtn = document.getElementById('send-btn');
+            const modeIcon = document.getElementById('mode-icon');
+
+            if (isTextMode) {
+                // 키보드 모드 → mike.png 표시
+                voiceIcon.style.display = 'none';
+                placeholder.style.display = 'none';
+                textInput.classList.add('active');
+                sendBtn.classList.add('active');
+                modeIcon.innerHTML = '<img src="/static/mike.png" alt="mic" style="width: 24px; height: 24px;">';
+                textInput.focus();
+            } else {
+                // 음성 모드 → 키보드 아이콘 표시
+                voiceIcon.style.display = 'block';
+                placeholder.style.display = 'block';
+                textInput.classList.remove('active');
+                sendBtn.classList.remove('active');
+                modeIcon.innerHTML = '⌨️';
+            }
+        }
+
+        async function toggleRecording() {
+            const voiceIcon = document.getElementById('voice-icon');
+            const placeholder = document.getElementById('placeholder-text');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, {type: 'audio/wav'});
+                        await sendVoiceMessage(audioBlob);
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    voiceIcon.classList.add('recording');
+                    placeholder.textContent = '녹음 중... (5초)';
+
+                    setTimeout(() => {
+                        if (isRecording) {
+                            toggleRecording();
+                        }
+                    }, 5000);
+
+                } catch (err) {
+                    console.error('마이크 접근 오류:', err);
+                    alert('마이크 권한을 허용해주세요.');
+                }
+
+            } else {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                voiceIcon.classList.remove('recording');
+                placeholder.textContent = '아이콘을 클릭하여 음성채팅을 시작하세요';
+            }
+        }
+
+        async function sendVoiceMessage(audioBlob) {
+            try {
+                const loadingMsg = addTypingIndicator();
+
+                const formData = new FormData();
+                formData.append('audio', audioBlob);
+
+                const response = await fetch('/api/voice-to-text', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                loadingMsg.remove();
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addMessage(data.text, 'user');
+                    await processCommand(data.text, 'voice');
+                } else {
+                    addMessage('음성 인식에 실패했습니다. 다시 시도해주세요.', 'bot');
+                }
+
+            } catch (err) {
+                console.error('음성 전송 오류:', err);
+                addMessage('오류가 발생했습니다.', 'bot');
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('text-input');
+            const text = input.value.trim();
+
+            if (text) {
+                addMessage(text, 'user');
+                processCommand(text, 'keyboard');
+                input.value = '';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function processCommand(text, inputType) {
+            try {
+                const loadingMsg = addTypingIndicator();
+
+                const response = await fetch('/api/process-command', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        input_type: inputType
+                    })
+                });
+
+                loadingMsg.remove();
+
+                const data = await response.json();
+
+                if (data.type === 'confirm') {
+                    currentConfirmData = data.confirm_data;
+                    addConfirmMessage(data.message);
+                } else {
+                    addMessage(data.message, 'bot');
+                }
+
+            } catch (err) {
+                console.error('명령 처리 오류:', err);
+                addMessage('오류가 발생했습니다.', 'bot');
+            }
+        }
+
+        function addConfirmMessage(text) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+
+            messageDiv.innerHTML = `
+                <div class="bot-icon">
+                    <img src="/static/chatbot.png" alt="bot">
+                </div>
+                <div class="message-content">
+                    ${text}
+                    <div class="confirm-buttons">
+                        <button class="confirm-btn no" onclick="confirmOrder(false)">
+                            네
+                        </button>
+                        <button class="confirm-btn yes" onclick="confirmOrder(true)">
+                            주문 전송 완료
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            return messageDiv;
+        }
+
+        async function confirmOrder(confirmed) {
+            if (confirmed && currentConfirmData) {
+                try {
+                    const loadingMsg = addTypingIndicator();
+
+                    const response = await fetch('/api/execute-order', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            confirm_data: currentConfirmData
+                        })
+                    });
+
+                    loadingMsg.remove();
+
+                    const data = await response.json();
+                    addMessage(data.message, 'bot');
+
+                } catch (err) {
+                    console.error('주문 실행 오류:', err);
+                    addMessage('주문 실행에 실패했습니다.', 'bot');
+                }
+            } else {
+                addMessage('❌ 주문이 취소되었습니다.', 'bot');
+            }
+
+            currentConfirmData = null;
+        }
+
+        function addMessage(text, sender) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            if (sender === 'bot') {
+                messageDiv.innerHTML = `
+                    <div class="bot-icon">
+                        <img src="/static/chatbot.png" alt="bot">
+                    </div>
+                    <div class="message-content">${text}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `<div class="message-content">${text}</div>`;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageDiv;
+        }
+
+        function addTypingIndicator() {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="bot-icon">
+                    <img src="/static/chatbot.png" alt="bot">
+                </div>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return messageDiv;
+        }
+    </script>
+</body>
+</html>

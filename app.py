@@ -2,7 +2,7 @@
 AI 음성 주식매매 챗봇 - Flask 메인 서버
 """
 
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
@@ -30,33 +30,26 @@ KIS_APP_KEY = os.getenv('KIS_APP_KEY')
 KIS_APP_SECRET = os.getenv('KIS_APP_SECRET')
 KIS_ACCOUNT_NO = os.getenv('KIS_ACCOUNT_NO')
 
-# Database
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_USER = os.getenv('DB_USER', 'root')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '')
-DB_NAME = os.getenv('DB_NAME', 'stock_chatbot')
-DB_PORT = int(os.getenv('DB_PORT', 3306))
-
 # ===== 인스턴스 생성 =====
 # 한투 API (모의투자로 시작)
 kis_api = None
 if KIS_APP_KEY and KIS_APP_SECRET and KIS_ACCOUNT_NO:
     try:
         kis_api = KISApi(KIS_APP_KEY, KIS_APP_SECRET, KIS_ACCOUNT_NO, is_real=False)
-        print("✅ 한국투자증권 API 초기화 완료")
+        print("한국투자증권 API 초기화 완료")
     except Exception as e:
-        print(f"⚠️ 한국투자증권 API 초기화 실패: {str(e)}")
+        print(f"한국투자증권 API 초기화 실패: {str(e)}")
         print("   API 키를 확인하거나 나중에 설정하세요.")
 
-# Database
+# Supabase Database
 db = None
 try:
-    db = Database(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT)
+    db = Database()  # Supabase는 파라미터 불필요
     if db.test_connection():
-        print("✅ 데이터베이스 연결 완료")
+        print("데이터베이스 연결 완료")
 except Exception as e:
-    print(f"⚠️ 데이터베이스 연결 실패: {str(e)}")
-    print("   MySQL 설정을 확인하거나 나중에 설정하세요.")
+    print(f"데이터베이스 연결 실패: {str(e)}")
+    print("   Supabase 설정을 확인하세요.")
 
 # 임시 사용자 ID (실제로는 로그인 시스템 필요)
 TEMP_USER_ID = 1
@@ -68,6 +61,12 @@ TEMP_USER_ID = 1
 def index():
     """메인 페이지"""
     return render_template('index.html')
+
+
+@app.route('/favicon.ico')
+def favicon():
+    """파비콘 제공"""
+    return send_from_directory('templates', 'favicon.ico', mimetype='image/x-icon')
 
 
 @app.route('/api/voice-to-text', methods=['POST'])
@@ -104,7 +103,7 @@ def voice_to_text():
             }), 400
 
     except Exception as e:
-        print(f"❌ 음성 인식 오류: {str(e)}")
+        print(f"음성 인식 오류: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -141,7 +140,7 @@ def process_command_api():
         return jsonify(response)
 
     except Exception as e:
-        print(f"❌ 명령 처리 오류: {str(e)}")
+        print(f"명령 처리 오류: {str(e)}")
         return jsonify({
             "error": str(e),
             "message": "오류가 발생했습니다. 다시 시도해주세요."
@@ -156,7 +155,7 @@ def handle_command(parsed: dict) -> dict:
     # API가 없는 경우 안내
     if not kis_api:
         return {
-            "message": "⚠️ 한국투자증권 API가 설정되지 않았습니다.\n.env 파일에 API 키를 설정해주세요.",
+            "message": "한국투자증권 API가 설정되지 않았습니다.\n.env 파일에 API 키를 설정해주세요.",
             "speak": False
         }
 
@@ -178,9 +177,9 @@ def handle_command(parsed: dict) -> dict:
 
             if result['success']:
                 msg = f"""{result['stock_name']} 현재가
-💰 {result['current_price']:,}원
-📊 전일대비: {result['change']:+,}원 ({result['change_rate']:+.2f}%)
-📈 거래량: {result['volume']:,}주"""
+현재가: {result['current_price']:,}원
+전일대비: {result['change']:+,}원 ({result['change_rate']:+.2f}%)
+거래량: {result['volume']:,}주"""
                 return {"message": msg, "speak": True}
             else:
                 return {"message": result.get('message', "현재가 조회에 실패했습니다."), "speak": True}
@@ -190,7 +189,7 @@ def handle_command(parsed: dict) -> dict:
             result = kis_api.get_balance()
 
             if result['success']:
-                msg = f"""💰 계좌 정보
+                msg = f"""계좌 정보
 예수금: {result['deposit']:,}원
 총 평가액: {result['total_value']:,}원
 평가 손익: {result['profit_loss']:+,}원 ({result['profit_rate']:+.2f}%)"""
@@ -206,7 +205,7 @@ def handle_command(parsed: dict) -> dict:
                 if result['count'] == 0:
                     return {"message": "보유 중인 종목이 없습니다.", "speak": True}
 
-                msg = f"📊 보유 종목 ({result['count']}개)\n\n"
+                msg = f"보유 종목 ({result['count']}개)\n\n"
                 for i, stock in enumerate(result['holdings'], 1):
                     msg += f"{i}. {stock['stock_name']}\n"
                     msg += f"   {stock['quantity']}주 | {stock['current_price']:,}원\n"
@@ -248,7 +247,7 @@ def handle_command(parsed: dict) -> dict:
         else:
             quantity_text = f"{quantity}주" if quantity != -1 else "전량"
 
-        confirm_msg = f"""🔔 주문 확인
+        confirm_msg = f"""주문 확인
 
 종목: {stock}
 수량: {quantity_text}
@@ -279,11 +278,11 @@ def handle_command(parsed: dict) -> dict:
             "message": """무엇을 도와드릴까요?
 
 사용 가능한 명령어:
-• "삼성전자 현재가?"
-• "네이버 10주 사줘"
-• "카카오 전부 팔아"
-• "내 잔고 확인"
-• "보유 종목 보여줘"
+- "삼성전자 현재가?"
+- "네이버 10주 사줘"
+- "카카오 전부 팔아"
+- "내 잔고 확인"
+- "보유 종목 보여줘"
 
 음성 또는 키보드로 입력하세요.""",
             "speak": True
@@ -329,7 +328,7 @@ def execute_order():
                 }
                 db.save_order(TEMP_USER_ID, order_data)
             except Exception as e:
-                print(f"⚠️ DB 저장 오류: {str(e)}")
+                print(f"DB 저장 오류: {str(e)}")
 
         # 응답 저장
         if db and result.get('message'):
@@ -345,7 +344,7 @@ def execute_order():
         })
 
     except Exception as e:
-        print(f"❌ 주문 실행 오류: {str(e)}")
+        print(f"주문 실행 오류: {str(e)}")
         return jsonify({
             "error": str(e),
             "message": "주문 실행에 실패했습니다."
@@ -372,7 +371,7 @@ def tts_api():
         )
 
     except Exception as e:
-        print(f"❌ TTS 오류: {str(e)}")
+        print(f"TTS 오류: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -391,12 +390,12 @@ def health_check():
 # ===== 메인 실행 =====
 if __name__ == '__main__':
     print("\n" + "=" * 70)
-    print("🚀 AI 음성 주식매매 챗봇 서버 시작")
+    print("AI 음성 주식매매 챗봇 서버 시작")
     print("=" * 70)
-    print(f"📍 서버 주소: http://localhost:5000")
-    print(f"🎤 Clova STT: {'✅ 활성화' if CLOVA_CLIENT_ID else '❌ 비활성화'}")
-    print(f"📈 한투 API: {'✅ 활성화' if kis_api else '❌ 비활성화'}")
-    print(f"🗄️  데이터베이스: {'✅ 연결됨' if db else '❌ 연결 안됨'}")
+    print(f"서버 주소: http://localhost:5000")
+    print(f"Clova STT: {'활성화' if CLOVA_CLIENT_ID else '비활성화'}")
+    print(f"한투 API: {'활성화' if kis_api else '비활성화'}")
+    print(f"데이터베이스: {'연결됨' if db else '연결 안됨'}")
     print("=" * 70 + "\n")
 
     # 서버 실행

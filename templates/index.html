@@ -2,8 +2,18 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>한국투자증권 AI 음성챗봇</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+
+    
+    <!-- PWA 설정 -->
+    <meta name="theme-color" content="#555">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="한투 챗봇">
+    <link rel="manifest" href="/manifest.json">
+    
     <style>
         * {
             margin: 0;
@@ -56,6 +66,7 @@
             padding: 20px;
             background: #fafafa;
             padding-bottom: 280px;
+            -webkit-overflow-scrolling: touch;
         }
 
         .messages::-webkit-scrollbar {
@@ -152,21 +163,21 @@
         }
 
         .confirm-btn.yes {
-            background: #555;
+            background: #4CAF50;
             color: white;
         }
 
         .confirm-btn.yes:hover {
-            background: #333;
+            background: #45a049;
         }
 
         .confirm-btn.no {
-            background: #f0f0f0;
-            color: #666;
+            background: #f44336;
+            color: white;
         }
 
         .confirm-btn.no:hover {
-            background: #e0e0e0;
+            background: #da190b;
         }
 
         .input-area {
@@ -203,11 +214,15 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            font-size: 24px;
         }
 
         .keyboard-icon:hover {
             background: #f0f0f0;
+        }
+
+        .keyboard-icon img {
+            width: 24px;
+            height: 24px;
         }
 
         .big-bot-icon {
@@ -321,12 +336,62 @@
             transform: scale(1.05);
         }
 
+        .keyboard-text {
+            font-size: 24px;
+        }
+
+        /* 모바일 최적화 */
         @media (max-width: 600px) {
             .container {
                 width: 100%;
                 height: 100vh;
                 border-radius: 0;
                 max-width: 100%;
+            }
+            
+            .messages {
+                padding-bottom: 200px;
+            }
+            
+            .input-area {
+                padding: 15px;
+            }
+            
+            .input-container {
+                padding: 50px 15px;
+            }
+        }
+
+        /* PWA 설치 프롬프트 */
+        .install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #555;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
             }
         }
     </style>
@@ -335,7 +400,7 @@
     <div class="container">
         <div class="header">
             <div class="header-title">한국투자증권 AI 음성챗봇</div>
-            <div class="header-subtitle">● 봇과 대화 중</div>
+            <div class="header-subtitle">봇과 대화 중</div>
         </div>
 
         <div class="messages" id="messages">
@@ -343,14 +408,14 @@
                 <div class="bot-icon">
                     <img src="/static/chatbot.png" alt="bot">
                 </div>
-                <div class="message-content">주식 매수/매도를 음성으로 할 수 있어요. "네이버 5주 매수"라고 말해보세요.</div>
+                <div class="message-content">가능한 사용 가능한 명령어는 도움말을 입력해보세요.</div>
             </div>
         </div>
 
         <div class="input-area">
             <div class="input-container">
                 <div class="keyboard-icon" id="mode-icon" onclick="toggleInputMode()">
-                    ⌨️
+                    <span class="keyboard-text">⌨</span>
                 </div>
                 
                 <img src="/static/chatbot.png" alt="bot" class="big-bot-icon" id="voice-icon" onclick="toggleRecording()">
@@ -366,10 +431,15 @@
                        onkeypress="handleKeyPress(event)">
                 
                 <button class="send-btn" id="send-btn" onclick="sendMessage()">
-                    →
+                    전송
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- PWA 설치 프롬프트 -->
+    <div class="install-prompt" id="install-prompt" onclick="installPWA()">
+        앱으로 설치하기
     </div>
 
     <script>
@@ -378,6 +448,42 @@
         let audioChunks = [];
         let currentConfirmData = null;
         let isTextMode = false;
+        let deferredPrompt;
+
+        // PWA 설치 프롬프트
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // 모바일에서만 설치 프롬프트 표시
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                setTimeout(() => {
+                    document.getElementById('install-prompt').classList.add('show');
+                }, 2000);
+            }
+        });
+
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('PWA 설치됨');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('install-prompt').classList.remove('show');
+                });
+            }
+        }
+
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker 등록됨'))
+                    .catch(err => console.log('Service Worker 등록 실패:', err));
+            });
+        }
 
         function toggleInputMode() {
             isTextMode = !isTextMode;
@@ -388,7 +494,6 @@
             const modeIcon = document.getElementById('mode-icon');
 
             if (isTextMode) {
-                // 키보드 모드 → mike.png 표시
                 voiceIcon.style.display = 'none';
                 placeholder.style.display = 'none';
                 textInput.classList.add('active');
@@ -396,12 +501,11 @@
                 modeIcon.innerHTML = '<img src="/static/mike.png" alt="mic" style="width: 24px; height: 24px;">';
                 textInput.focus();
             } else {
-                // 음성 모드 → 키보드 아이콘 표시
                 voiceIcon.style.display = 'block';
                 placeholder.style.display = 'block';
                 textInput.classList.remove('active');
                 sendBtn.classList.remove('active');
-                modeIcon.innerHTML = '⌨️';
+                modeIcon.innerHTML = '<span class="keyboard-text">⌨</span>';
             }
         }
 
@@ -496,6 +600,21 @@
         }
 
         async function processCommand(text, inputType) {
+            // 도움말 처리
+            if (text === '도움말' || text.toLowerCase() === 'help') {
+                const helpText = `사용 가능한 명령어:
+
+매수: "삼성전자 10주 사줘"
+매도: "네이버 5주 팔아"  
+현재가: "카카오 현재가?"
+잔고: "내 잔고 확인"
+보유종목: "보유 종목 보여줘"
+
+음성 또는 키보드로 입력 가능합니다.`;
+                addMessage(helpText, 'bot');
+                return;
+            }
+
             try {
                 const loadingMsg = addTypingIndicator();
 
@@ -539,11 +658,11 @@
                 <div class="message-content">
                     ${text}
                     <div class="confirm-buttons">
-                        <button class="confirm-btn no" onclick="confirmOrder(false)">
-                            네
-                        </button>
                         <button class="confirm-btn yes" onclick="confirmOrder(true)">
-                            주문 전송 완료
+                            주문 실행
+                        </button>
+                        <button class="confirm-btn no" onclick="confirmOrder(false)">
+                            취소
                         </button>
                     </div>
                 </div>
@@ -580,7 +699,7 @@
                     addMessage('주문 실행에 실패했습니다.', 'bot');
                 }
             } else {
-                addMessage('❌ 주문이 취소되었습니다.', 'bot');
+                addMessage('주문이 취소되었습니다.', 'bot');
             }
 
             currentConfirmData = null;

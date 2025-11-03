@@ -55,12 +55,12 @@ class KISApi:
             if response.status_code == 200:
                 data = response.json()
                 self.access_token = data["access_token"]
-                print("✅ 한국투자증권 API 토큰 발급 완료")
+                print("한국투자증권 API 토큰 발급 완료")
             else:
                 raise Exception(f"토큰 발급 실패: {response.text}")
 
         except Exception as e:
-            print(f"❌ 토큰 발급 오류: {str(e)}")
+            print(f"토큰 발급 오류: {str(e)}")
             raise
 
     def _get_headers(self, tr_id: str) -> Dict:
@@ -193,23 +193,23 @@ class KISApi:
                     return {
                         "success": True,
                         "order_no": data["output"]["ODNO"],
-                        "message": f"✅ 매수 주문 성공 (주문번호: {data['output']['ODNO']})"
+                        "message": f"매수 주문 성공 (주문번호: {data['output']['ODNO']})"
                     }
                 else:  # 실패
                     return {
                         "success": False,
-                        "message": f"❌ 매수 실패: {data.get('msg1', '알 수 없는 오류')}"
+                        "message": f"매수 실패: {data.get('msg1', '알 수 없는 오류')}"
                     }
             else:
                 return {
                     "success": False,
-                    "message": f"❌ API 오류: HTTP {response.status_code}"
+                    "message": f"API 오류: HTTP {response.status_code}"
                 }
 
         except Exception as e:
             return {
                 "success": False,
-                "message": f"❌ 네트워크 오류: {str(e)}"
+                "message": f"네트워크 오류: {str(e)}"
             }
 
     def sell_stock(self, stock_code: str, quantity: int,
@@ -285,23 +285,23 @@ class KISApi:
                     return {
                         "success": True,
                         "order_no": data["output"]["ODNO"],
-                        "message": f"✅ 매도 주문 성공 (주문번호: {data['output']['ODNO']})"
+                        "message": f"매도 주문 성공 (주문번호: {data['output']['ODNO']})"
                     }
                 else:
                     return {
                         "success": False,
-                        "message": f"❌ 매도 실패: {data.get('msg1', '알 수 없는 오류')}"
+                        "message": f"매도 실패: {data.get('msg1', '알 수 없는 오류')}"
                     }
             else:
                 return {
                     "success": False,
-                    "message": f"❌ API 오류: HTTP {response.status_code}"
+                    "message": f"API 오류: HTTP {response.status_code}"
                 }
 
         except Exception as e:
             return {
                 "success": False,
-                "message": f"❌ 네트워크 오류: {str(e)}"
+                "message": f"네트워크 오류: {str(e)}"
             }
 
     def get_balance(self) -> Dict:
@@ -471,7 +471,7 @@ def test_kis_api():
     account_no = os.getenv('KIS_ACCOUNT_NO')
 
     if not all([app_key, app_secret, account_no]):
-        print("❌ .env 파일에 API 키를 설정해주세요!")
+        print(".env 파일에 API 키를 설정해주세요!")
         return
 
     # API 초기화 (모의투자)

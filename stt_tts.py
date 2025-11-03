@@ -51,18 +51,18 @@ def clova_stt(audio_data: bytes, client_id: str, client_secret: str,
             text = result.get('text', '')
 
             if text:
-                print(f"✅ 음성 인식 성공: {text}")
+                print(f"음성 인식 성공: {text}")
                 return text
             else:
-                print("❌ 음성 인식 실패: 텍스트 없음")
+                print("음성 인식 실패: 텍스트 없음")
                 return None
         else:
-            print(f"❌ 음성 인식 실패: HTTP {response.status_code}")
+            print(f"음성 인식 실패: HTTP {response.status_code}")
             print(f"   응답: {response.text}")
             return None
 
     except Exception as e:
-        print(f"❌ Clova STT 오류: {str(e)}")
+        print(f"Clova STT 오류: {str(e)}")
         return None
 
 
@@ -90,11 +90,11 @@ def text_to_speech(text: str, lang: str = 'ko', slow: bool = False) -> io.BytesI
         tts.write_to_fp(audio_fp)
         audio_fp.seek(0)
 
-        print(f"✅ TTS 생성 성공: {len(text)}자")
+        print(f"TTS 생성 성공: {len(text)}자")
         return audio_fp
 
     except Exception as e:
-        print(f"❌ TTS 생성 오류: {str(e)}")
+        print(f"TTS 생성 오류: {str(e)}")
         raise
 
 
@@ -111,11 +111,11 @@ def save_audio_file(audio_data: bytes, file_path: str) -> bool:
     try:
         with open(file_path, 'wb') as f:
             f.write(audio_data)
-        print(f"✅ 음성 파일 저장 성공: {file_path}")
+        print(f"음성 파일 저장 성공: {file_path}")
         return True
 
     except Exception as e:
-        print(f"❌ 파일 저장 오류: {str(e)}")
+        print(f"파일 저장 오류: {str(e)}")
         return False
 
 
@@ -131,11 +131,11 @@ def load_audio_file(file_path: str) -> Optional[bytes]:
     try:
         with open(file_path, 'rb') as f:
             audio_data = f.read()
-        print(f"✅ 음성 파일 로드 성공: {file_path}")
+        print(f"음성 파일 로드 성공: {file_path}")
         return audio_data
 
     except Exception as e:
-        print(f"❌ 파일 로드 오류: {str(e)}")
+        print(f"파일 로드 오류: {str(e)}")
         return None
 
 
@@ -177,7 +177,7 @@ def test_stt():
     client_secret = os.getenv('CLOVA_CLIENT_SECRET')
 
     if not client_id or not client_secret:
-        print("❌ .env 파일에 Clova API 키를 설정해주세요!")
+        print(".env 파일에 Clova API 키를 설정해주세요!")
         return
 
     print("=" * 70)
@@ -188,7 +188,7 @@ def test_stt():
     test_file = "test_audio.wav"
 
     if not os.path.exists(test_file):
-        print(f"❌ 테스트 파일이 없습니다: {test_file}")
+        print(f"테스트 파일이 없습니다: {test_file}")
         print("   실제 음성 파일로 테스트해주세요.")
         return
 

@@ -82,10 +82,10 @@ class KISApi:
 
     def get_current_price(self, stock_code: str) -> Dict:
         """주식 현재가 조회
-
+    
         Args:
             stock_code: 종목코드 (예: "005930")
-
+    
         Returns:
             dict: {
                 "success": True/False,
@@ -97,30 +97,30 @@ class KISApi:
             }
         """
         url = f"{self.base_url}/uapi/domestic-stock/v1/quotations/inquire-price"
-
+    
         tr_id = "FHKST01010100"
         headers = self._get_headers(tr_id)
-
+    
         params = {
             "FID_COND_MRKT_DIV_CODE": "J",  # 시장구분 (J=주식)
             "FID_INPUT_ISCD": stock_code  # 종목코드
         }
-
+    
         try:
             response = requests.get(url, headers=headers, params=params, timeout=10)
-
+    
             if response.status_code == 200:
                 data = response.json()
-
+    
                 if data["rt_cd"] == "0":  # 성공
                     output = data["output"]
                     return {
                         "success": True,
-                        "stock_name": output["hts_kor_isnm"],  # 종목명
-                        "current_price": int(output["stck_prpr"]),  # 현재가
-                        "change": int(output["prdy_vrss"]),  # 전일대비
-                        "change_rate": float(output["prdy_ctrt"]),  # 등락률
-                        "volume": int(output["acml_vol"])  # 거래량
+                        "stock_name": output.get("prdt_name", output.get("hts_kor_isnm", "종목명")),
+                        "current_price": int(output.get("stck_prpr", 0)),
+                        "change": int(output.get("prdy_vrss", 0)),
+                        "change_rate": float(output.get("prdy_ctrt", 0)),
+                        "volume": int(output.get("acml_vol", 0))
                     }
                 else:
                     return {
@@ -132,7 +132,7 @@ class KISApi:
                     "success": False,
                     "message": f"API 오류: HTTP {response.status_code}"
                 }
-
+    
         except Exception as e:
             return {
                 "success": False,
@@ -460,9 +460,10 @@ class KISApi:
 
 # ===== 테스트 함수 =====
 def test_kis_api():
-    """KIS API 테스트 (모의투자)"""
+    """KIS API 테스트 (실제 계좌)"""
     import os
     from dotenv import load_dotenv
+    import json
 
     load_dotenv()
 
@@ -474,11 +475,12 @@ def test_kis_api():
         print(".env 파일에 API 키를 설정해주세요!")
         return
 
-    # API 초기화 (모의투자)
-    api = KISApi(app_key, app_secret, account_no, is_real=False)
+    # API 초기화 (실제 계좌)
+    api = KISApi(app_key, app_secret, account_no, is_real=True)
 
     print("\n" + "=" * 70)
-    print("한국투자증권 API 테스트")
+    print("한국투자증권 API 테스트 (실제 계좌)")
+    print("⚠️  주의: 실제 계좌입니다!")
     print("=" * 70)
 
     # 1. 현재가 조회

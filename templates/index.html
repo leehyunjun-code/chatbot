@@ -548,34 +548,27 @@
         async function toggleRecording() {
             const voiceBtn = document.getElementById('voiceBtn');
             const voiceText = document.getElementById('voiceText');
-
+        
             if (!isRecording) {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
                     audioChunks = [];
-
+        
                     mediaRecorder.ondataavailable = (event) => {
                         audioChunks.push(event.data);
                     };
-
+        
                     mediaRecorder.onstop = async () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                         await sendVoiceMessage(audioBlob);
                     };
-
+        
                     mediaRecorder.start();
                     isRecording = true;
                     voiceBtn.classList.add('recording');
-                    voiceText.textContent = '녹음 중... (5초)';
-
-                    // 5초 후 자동 정지
-                    setTimeout(() => {
-                        if (isRecording) {
-                            toggleRecording();
-                        }
-                    }, 5000);
-
+                    voiceText.textContent = '녹음 중... 클릭하여 정지';
+        
                 } catch (err) {
                     console.error('마이크 접근 오류:', err);
                     alert('마이크 권한을 허용해주세요.');
@@ -591,7 +584,7 @@
                 voiceText.textContent = '아이콘을 클릭하여 음성채팅을 시작하세요';
             }
         }
-
+        
         // 음성 메시지 전송
         async function sendVoiceMessage(audioBlob) {
             try {
@@ -645,15 +638,15 @@
         async function processCommand(text, inputType) {
             // 도움말 처리
             if (text === '도움말' || text.toLowerCase() === 'help') {
-                const helpText = `📌 사용 가능한 명령어:
+                const helpText = `사용 가능한 명령어:
 
-📈 매수: "삼성전자 10주 사줘"
-📉 매도: "네이버 5주 팔아"  
-💰 현재가: "카카오 현재가?"
-💳 잔고: "내 잔고 확인"
-📊 보유종목: "보유 종목 보여줘"
+매수: "삼성전자 10주 사줘"
+매도: "네이버 5주 팔아"  
+현재가: "카카오 현재가?"
+잔고: "내 잔고 확인"
+보유종목: "보유 종목 보여줘"
 
-음성(🎤) 또는 키보드(⌨️)로 입력 가능합니다.`;
+음성 또는 키보드로 입력 가능합니다.`;
                 addMessage(helpText, 'bot');
                 return;
             }
@@ -703,10 +696,10 @@
                     ${text}
                     <div class="confirm-buttons">
                         <button class="confirm-btn yes" onclick="confirmOrder(true)">
-                            ✅ 주문 실행
+                            주문 실행
                         </button>
                         <button class="confirm-btn no" onclick="confirmOrder(false)">
-                            ❌ 취소
+                            취소
                         </button>
                     </div>
                 </div>

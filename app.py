@@ -1,7 +1,6 @@
 """
 AI 음성 주식매매 챗봇 - Flask 메인 서버
 """
-
 from flask import Flask, request, jsonify, send_file, render_template, send_from_directory
 from flask_cors import CORS
 import os
@@ -16,8 +15,10 @@ from stt_tts import clova_stt, text_to_speech
 # 환경변수 로드
 load_dotenv()
 
-# Flask 앱 생성
-app = Flask(__name__)
+# Flask 앱 생성 - static 폴더 설정 추가
+app = Flask(__name__, 
+            static_url_path='/static',
+            static_folder='public/static')
 CORS(app)  # CORS 허용
 
 # ===== 설정 =====
@@ -35,7 +36,7 @@ KIS_ACCOUNT_NO = os.getenv('KIS_ACCOUNT_NO')
 kis_api = None
 if KIS_APP_KEY and KIS_APP_SECRET and KIS_ACCOUNT_NO:
     try:
-        kis_api = KISApi(KIS_APP_KEY, KIS_APP_SECRET, KIS_ACCOUNT_NO, is_real=False)
+        kis_api = KISApi(KIS_APP_KEY, KIS_APP_SECRET, KIS_ACCOUNT_NO, is_real=True)
         print("한국투자증권 API 초기화 완료")
     except Exception as e:
         print(f"한국투자증권 API 초기화 실패: {str(e)}")
@@ -62,12 +63,22 @@ def index():
     """메인 페이지"""
     return render_template('index.html')
 
+# static 파일은 Flask가 자동으로 처리 (static_folder 설정으로)
 
 @app.route('/favicon.ico')
-def favicon():
+def serve_favicon():
     """파비콘 제공"""
-    return send_from_directory('templates', 'favicon.ico', mimetype='image/x-icon')
+    return send_from_directory('public', 'favicon.ico')
 
+@app.route('/manifest.json')
+def serve_manifest():
+    """PWA manifest 제공"""
+    return send_from_directory('public', 'manifest.json')
+
+@app.route('/sw.js')
+def serve_sw():
+    """Service Worker 제공"""
+    return send_from_directory('public', 'sw.js')
 
 @app.route('/api/voice-to-text', methods=['POST'])
 def voice_to_text():

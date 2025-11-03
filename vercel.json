@@ -9,19 +9,19 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/public/static/$1"  ← 수정!
+      "dest": "/public/static/$1"
     },
     {
       "src": "/favicon.ico",
-      "dest": "/public/favicon.ico"  ← 수정!
+      "dest": "/public/favicon.ico"
     },
     {
       "src": "/manifest.json",
-      "dest": "/public/manifest.json"  ← 수정!
+      "dest": "/public/manifest.json"
     },
     {
       "src": "/sw.js",
-      "dest": "/public/sw.js"  ← 수정!
+      "dest": "/public/sw.js"
     },
     {
       "src": "/api/(.*)",
